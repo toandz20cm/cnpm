@@ -23,7 +23,9 @@
     border: 1px solid #ccc; 
     box-shadow: 0 1px 3px -2px #121212, inset 0 2px 5px 0 rgba(255, 255, 255, 0.3); 
     -webkit-box-shadow: 0 1px 3px -2px #121212, inset 0 2px 5px 0 rgba(255, 255, 255, 0.3); 
-    height: 28px; }
+    height: 28px;
+    border-radius: 14px;
+} 
 
 .drawing-board-control > button { 
     cursor: pointer; 
@@ -56,7 +58,14 @@
 
 .drawing-board-control-colors { font-size: 0; line-height: 0; }
 
-.drawing-board-control-colors-current { border: 1px solid #ccc; cursor: pointer; display: inline-block; width: 26px; height: 26px; }
+.drawing-board-control-colors-current { 
+    border: 1px solid #ccc; 
+    cursor: pointer; 
+    display: inline-block; 
+    width: 26px; 
+    height: 26px;
+    border-radius: 13px;
+}
 
 .drawing-board-control-colors-rainbows { display: inline-block; margin-left: 5px; position: absolute; left: 0; top: 33px; margin-left: 0; z-index: 100; width: 250px; height: auto; padding: 4px; }
 
@@ -64,11 +73,28 @@
 
 .drawing-board-control-colors-picker:first-child { margin-right: 5px; }
 
-.drawing-board-control-colors-picker { display: inline-block; width: 18px; height: 18px; cursor: pointer; }
+.drawing-board-control-colors-picker { 
+    display: inline-block; 
+    width: 18px; 
+    height: 18px; 
+    cursor: pointer;
+    border-radius: 9px;
+}
 
-.drawing-board-control-colors-picker[data-color="rgba(255, 255, 255, 1)"] { width: 16px; height: 17px; border: 1px solid #ccc; border-bottom: none; }
+.drawing-board-control-colors-picker[data-color="rgba(255, 255, 255, 1)"] { 
+    width: 16px; 
+    height: 17px; 
+    border: 1px solid #ccc; 
+    border-bottom: none;
+    border-radius: 8px;
+}
 
-.drawing-board-control-colors-picker:hover { width: 16px; height: 16px; border: 1px solid #555; }
+.drawing-board-control-colors-picker:hover { 
+    width: 16px; 
+    height: 16px; 
+    border: 1px solid #555;
+    border-radius: 8px;
+}
 
 .drawing-board-control-drawingmode > button { margin-right: 2px; }
 .drawing-board-control-drawingmode > button:last-child { margin-right: 0; }
