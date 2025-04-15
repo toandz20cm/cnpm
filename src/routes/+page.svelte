@@ -182,19 +182,72 @@
 		}
 	}
 
+	function createDraggableToolbar() {
+		const toolbar = document.createElement('div');
+		toolbar.className = 'drawing-board-toolbar';
+		
+		// Add drag functionality
+		let isDragging = false;
+		let currentX: number = 0;
+		let currentY: number = 0;
+		let initialX: number = 0;
+		let initialY: number = 0;
+		let xOffset: number = 0;
+		let yOffset: number = 0;
+
+		toolbar.addEventListener('mousedown', dragStart);
+		document.addEventListener('mousemove', drag);
+		document.addEventListener('mouseup', dragEnd);
+
+		function dragStart(e: MouseEvent) {
+			initialX = e.clientX - xOffset;
+			initialY = e.clientY - yOffset;
+
+			if (e.target === toolbar) {
+				isDragging = true;
+				toolbar.classList.add('dragging');
+			}
+		}
+
+		function drag(e: MouseEvent) {
+			if (isDragging) {
+				e.preventDefault();
+				currentX = e.clientX - initialX;
+				currentY = e.clientY - initialY;
+
+				xOffset = currentX;
+				yOffset = currentY;
+
+				setTranslate(currentX, currentY, toolbar);
+			}
+		}
+
+		function dragEnd() {
+			initialX = currentX;
+			initialY = currentY;
+			isDragging = false;
+			toolbar.classList.remove('dragging');
+		}
+
+		function setTranslate(xPos: number, yPos: number, el: HTMLElement) {
+			el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+		}
+
+		return toolbar;
+	}
+
 	function addOutputControl() {
 		const div = document.createElement('div');
 		div.className = 'drawing-board-control';
 
 		const btn = document.createElement('button');
 		btn.innerHTML = '⏯';
-		btn.className = 'w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-lg shadow flex items-center justify-center';
 		btn.onclick = drawNextImage;
 		div.append(btn);
 
-		const controlsEl = document.querySelector('.drawing-board-controls');
-		if (controlsEl && outputImgs.length > 1) {
-			controlsEl.appendChild(div);
+		const toolbar = document.querySelector('.drawing-board-toolbar');
+		if (toolbar && outputImgs.length > 1) {
+			toolbar.appendChild(div);
 			isOutputControlAdded = true;
 			canvasContainerEl.onclick = () => {
 				if (interval) {
@@ -210,7 +263,6 @@
 
 		const btn = document.createElement('button');
 		btn.innerHTML = '💣';
-		btn.className = 'w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-lg shadow flex items-center justify-center';
 		btn.onclick = () => {
 			ctx?.clearRect(0, 0, canvasSize, canvasSize);
 			outputImgs = [];
@@ -218,9 +270,9 @@
 		};
 		div.append(btn);
 
-		const controlsEl = document.querySelector('.drawing-board-controls');
-		if (controlsEl) {
-			controlsEl.appendChild(div);
+		const toolbar = document.querySelector('.drawing-board-toolbar');
+		if (toolbar) {
+			toolbar.appendChild(div);
 		}
 	}
 
@@ -230,7 +282,6 @@
 
 		const btn = document.createElement('button');
 		btn.innerHTML = '💾';
-		btn.className = 'w-10 h-10 rounded-full bg-gray-500 hover:bg-gray-600 text-lg shadow flex items-center justify-center';
 		btn.onclick = () => {
 			if (!canvas) {
 				return;
@@ -243,9 +294,9 @@
 		};
 		div.append(btn);
 
-		const controlsEl = document.querySelector('.drawing-board-controls');
-		if (controlsEl) {
-			controlsEl.appendChild(div);
+		const toolbar = document.querySelector('.drawing-board-toolbar');
+		if (toolbar) {
+			toolbar.appendChild(div);
 		}
 	}
 
@@ -406,20 +457,51 @@ ${htmlImgs.slice(1).join("\n")}
 		sketchEl.style.width = `${canvasSize}px`;
 		sketchEl.style.height = `${canvasSize}px`;
 		await tick();
+		
+		// Create and add the draggable toolbar
+		const toolbar = createDraggableToolbar();
+		document.body.appendChild(toolbar);
+		
+		// Initialize DrawingBoard with all controls in the correct order
 		drawingBoard = new window.DrawingBoard.Board('board-container', {
 			size: 10,
-			controls: ['Color', { Size: { type: 'dropdown' } }, { DrawingMode: { filler: false } }],
+			controls: [
+				'Color',  // Color picker first
+				{ Size: { type: 'dropdown' } },  // Size selector second
+				{ DrawingMode: { pencil: true, eraser: true, filler: false } }  // Drawing tools last
+			],
 			webStorage: false,
 			enlargeYourContainer: true
 		});
+		
 		canvas = drawingBoard.canvas;
 		ctx = canvas.getContext('2d');
 		canvas.ondragover = function (e) {
 			e.preventDefault();
 			return false;
 		};
-		addClearCanvasControl();
-		addDownloadCanvasControl();
+		
+		// Move existing controls to the toolbar in the correct order
+		const controls = document.querySelector('.drawing-board-controls');
+		if (controls) {
+			// Get controls in the desired order
+			const colorControl = controls.querySelector('.drawing-board-control-colors');
+			const sizeControl = controls.querySelector('.drawing-board-control-size');
+			const drawingModeControl = controls.querySelector('.drawing-board-control-drawingmode');
+			
+			// Add controls to toolbar in the correct order
+			if (colorControl) toolbar.appendChild(colorControl);
+			if (sizeControl) toolbar.appendChild(sizeControl);
+			if (drawingModeControl) toolbar.appendChild(drawingModeControl);
+			
+			// Add clear and save buttons
+			addClearCanvasControl();
+			addDownloadCanvasControl();
+			
+			// Remove the old controls container
+			controls.remove();
+		}
+		
 		makeLinksTargetBlank();
 	});
 </script>
@@ -440,6 +522,7 @@ ${htmlImgs.slice(1).join("\n")}
 <!-- TOP -->
 
 <div class="gray-bar top-bar"></div>
+<div class="gray-bar top-bar"></div>
 
 <div class="flex flex-wrap gap-x-4 gap-y-2 justify-center my-0 bg-black text-white">
 	<canvas
@@ -456,18 +539,18 @@ ${htmlImgs.slice(1).join("\n")}
 		<div id="board-container" bind:this={canvasContainerEl} class="relative" />
 		{#if canvas}
 			<div>
-				<div class="flex gap-x-2 mt-3 items-start justify-center align-vertical">
-					<p class="font-bold align-middle py-2">Strength:</p>
-					<span
-						class="overflow-auto resize-y py-2 px-3 min-h-[42px] max-h-[500px] !w-[181px] whitespace-pre-wrap inline-block border border-gray-500 shadow-inner outline-none"
-						role="textbox"
-						contenteditable
-						spellcheck="false"
-						dir="auto"
-						maxlength="200"
-						bind:textContent={strength}
-						on:keydown={onKeyDown}
-					/>
+				<div class="flex gap-x-2 mt-3 items-center justify-center">
+					<p class="font-bold">Strength: {strength}</p>
+					<div class="strength-slider-container">
+						<input
+							type="range"
+							min="0"
+							max="1"
+							step="0.01"
+							bind:value={strength}
+							class="strength-slider"
+						/>
+					</div>
 				</div>
 				<div class="flex gap-x-2 mt-3 items-start justify-center">
 					<p class="font-bold align-middle py-2">Prompt:</p>
@@ -520,12 +603,66 @@ ${htmlImgs.slice(1).join("\n")}
 
 <style>
 	.gray-bar {
-    width: 100%; 
-    height: 39px; 
-    background-color: #000000; 
-  }
-  span[contenteditable]:empty::before {
-    content: var(--placeholder);
-    color: rgba(156, 163, 175);
-  }
+		width: 100%; 
+		height: 39px; 
+		background-color: #000000; 
+	}
+	
+	span[contenteditable]:empty::before {
+		content: var(--placeholder);
+		color: rgb(223, 226, 233);
+	}
+
+	.strength-slider-container {
+		width: 200px;
+		padding: 0 10px;
+	}
+
+	.strength-slider {
+		-webkit-appearance: none;
+		width: 100%;
+		height: 8px;
+		border-radius: 4px;
+		background: linear-gradient(to right, 
+			#ff0000, #ff8000, #ffff00, #80ff00, 
+			#00ff00, #00ff80, #00ffff, #0080ff, 
+			#0000ff, #8000ff, #ff00ff, #ff0080, #ff0000);
+		outline: none;
+		opacity: 0.7;
+		transition: opacity 0.2s;
+	}
+
+	.strength-slider:hover {
+		opacity: 1;
+	}
+
+	.strength-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: white;
+		cursor: pointer;
+		box-shadow: 0 0 2px rgba(0,0,0,0.5);
+		transition: transform 0.1s;
+	}
+
+	.strength-slider::-webkit-slider-thumb:hover {
+		transform: scale(1.1);
+	}
+
+	.strength-slider::-moz-range-thumb {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: white;
+		cursor: pointer;
+		box-shadow: 0 0 2px rgba(0,0,0,0.5);
+		transition: transform 0.1s;
+	}
+
+	.strength-slider::-moz-range-thumb:hover {
+		transform: scale(1.1);
+	}
 </style>

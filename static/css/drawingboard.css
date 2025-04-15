@@ -12,6 +12,51 @@
 
 .drawing-board-cursor { position: absolute; top: 0; left: 0; pointer-events: none; border-radius: 50%; background: #ccc; background: rgba(0, 0, 0, 0.2); z-index: 30; }
 
+/* Draggable Toolbar Styles */
+.drawing-board-toolbar {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.drawing-board-toolbar.dragging {
+    cursor: grabbing;
+}
+
+.drawing-board-toolbar .drawing-board-control {
+    margin: 0;
+    padding: 0;
+}
+
+.drawing-board-toolbar .drawing-board-control > button {
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.drawing-board-toolbar .drawing-board-control > button:hover {
+    background-color: #555;
+}
+
+.drawing-board-toolbar .drawing-board-control > button:active {
+    background-color: #666;
+}
+
 .drawing-board-control > button, .drawing-board-control-colors-rainbows, .drawing-board-control-size .drawing-board-control-inner, .drawing-board-control-size-dropdown { 
     -webkit-box-sizing: border-box; 
     -moz-box-sizing: border-box; 
