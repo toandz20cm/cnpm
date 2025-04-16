@@ -13,24 +13,38 @@
 	let isMainPage = false;
 
 	// Handle authentication
-	function handleLogin(event: Event) {
+	async function handleLogin(event: Event) {
 		event.preventDefault();
-		const users = JSON.parse(localStorage.getItem('users') || '[]');
-		const user = users.find((u: { username: string; password: string }) =>
-			u.username === username && u.password === password
-		);
-		if (user) {
-			isAuthenticated = true;
-			loginError = '';
-			username = '';
-			password = '';
-			handleEnterMainPage();
-		} else {
-			loginError = 'Invalid username or password';
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'login',
+					username,
+					password
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				isAuthenticated = true;
+				loginError = '';
+				username = '';
+				password = '';
+				handleEnterMainPage();
+			} else {
+				loginError = data.error || 'Invalid username or password';
+			}
+		} catch (error) {
+			console.error('Login error:', error);
+			loginError = 'Server error';
 		}
 	}
 
-	function handleSignup(event: Event) {
+	async function handleSignup(event: Event) {
 		event.preventDefault();
 		if (!username || !password) {
 			signupError = 'Please fill in all fields';
@@ -40,19 +54,35 @@
 			signupError = 'Passwords do not match';
 			return;
 		}
-		const users = JSON.parse(localStorage.getItem('users') || '[]');
-		if (users.some((u: { username: string }) => u.username === username)) {
-			signupError = 'Username already exists';
-			return;
+
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'signup',
+					username,
+					password
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				signupError = '';
+				alert('Registration successful! Please log in.');
+				isLoginView = true;
+				username = '';
+				password = '';
+				confirmPassword = '';
+			} else {
+				signupError = data.error || 'Registration failed';
+			}
+		} catch (error) {
+			console.error('Signup error:', error);
+			signupError = 'Server error';
 		}
-		users.push({ username, password });
-		localStorage.setItem('users', JSON.stringify(users));
-		signupError = '';
-		alert('Registration successful! Please log in.');
-		isLoginView = true;
-		username = '';
-		password = '';
-		confirmPassword = '';
 	}
 
 	function toggleView() {
@@ -73,6 +103,12 @@
 		loginError = '';
 		signupError = '';
 		drawingBoard?.reset({ webStorage: false });
+		
+		// Remove the drawing board toolbar
+		const toolbar = document.querySelector('.drawing-board-toolbar');
+		if (toolbar) {
+			toolbar.remove();
+		}
 	}
 
 	async function handleEnterMainPage() {
@@ -150,11 +186,20 @@
 	async function getCanvasSnapshot(
 		canvas: HTMLCanvasElement
 	): Promise<{ imgFile: File; imgBitmap: ImageBitmap }> {
-		const canvasDataUrl = canvas.toDataURL('png');
+		// Create a temporary canvas to ensure white background
+		const tempCanvas = document.createElement('canvas');
+		tempCanvas.width = canvasSize;
+		tempCanvas.height = canvasSize;
+		const tempCtx = tempCanvas.getContext('2d')!;
+		tempCtx.fillStyle = 'white';
+		tempCtx.fillRect(0, 0, canvasSize, canvasSize);
+		tempCtx.drawImage(canvas, 0, 0);
+
+		const canvasDataUrl = tempCanvas.toDataURL('image/png');
 		const res = await fetch(canvasDataUrl);
 		const blob = await res.blob();
-		const imgFile = new File([blob], 'canvas shot.png', { type: 'image/png' });
-		const imgData = canvas.getContext('2d')!.getImageData(0, 0, canvasSize, canvasSize);
+		const imgFile = new File([blob], 'canvas_shot.png', { type: 'image/png' });
+		const imgData = tempCtx.getImageData(0, 0, canvasSize, canvasSize);
 		const imgBitmap = await createImageBitmap(imgData);
 		return { imgFile, imgBitmap };
 	}
@@ -264,7 +309,7 @@
 	function createDraggableToolbar() {
 		const toolbar = document.createElement('div');
 		toolbar.className = 'drawing-board-toolbar';
-		
+
 		// Add drag functionality
 		let isDragging = false;
 		let currentX: number = 0;
@@ -316,68 +361,110 @@
 	}
 
 	function addOutputControl() {
-		const div = document.createElement('div');
-		div.className = 'drawing-board-control';
+        const div = document.createElement('div');
+        div.className = 'drawing-board-control';
 
-		const btn = document.createElement('button');
-		btn.innerHTML = '⏯';
-		btn.onclick = drawNextImage;
-		div.append(btn);
+        const btn = document.createElement('button');
+        btn.innerHTML = '⏯';
+        btn.style.backgroundColor = 'white'; // Set button background to white
+        btn.onclick = drawNextImage;
+        div.append(btn);
 
-		const toolbar = document.querySelector('.drawing-board-toolbar');
-		if (toolbar && outputImgs.length > 1) {
-			toolbar.appendChild(div);
-			isOutputControlAdded = true;
-			canvasContainerEl.onclick = () => {
-				if (interval) {
-					clearInterval(interval);
-				}
-			};
-		}
-	}
+        const toolbar = document.querySelector('.drawing-board-toolbar');
+        if (toolbar && outputImgs.length > 1) {
+            toolbar.appendChild(div);
+            isOutputControlAdded = true;
+            canvasContainerEl.onclick = () => {
+                if (interval) {
+                    clearInterval(interval);
+                }
+            };
+        }
+    }
 
 	function addClearCanvasControl() {
-		const div = document.createElement('div');
-		div.className = 'drawing-board-control';
+        const div = document.createElement('div');
+        div.className = 'drawing-board-control';
 
-		const btn = document.createElement('button');
-		btn.innerHTML = '💣';
-		btn.onclick = () => {
-			ctx?.clearRect(0, 0, canvasSize, canvasSize);
-			outputImgs = [];
-			isShowSketch = false;
-		};
-		div.append(btn);
+        const btn = document.createElement('button');
+        btn.innerHTML = '💣';
+        btn.style.backgroundColor = 'white'; // Set button background to white
+        btn.onclick = () => {
+            if (ctx) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvasSize, canvasSize);
+                ctx.clearRect(0, 0, canvasSize, canvasSize);
+                outputImgs = [];
+                isShowSketch = false;
+            }
+        };
+        div.append(btn);
 
-		const toolbar = document.querySelector('.drawing-board-toolbar');
-		if (toolbar) {
-			toolbar.appendChild(div);
-		}
-	}
+        const toolbar = document.querySelector('.drawing-board-toolbar');
+        if (toolbar) {
+            toolbar.appendChild(div);
+        }
+    }
 
 	function addDownloadCanvasControl() {
-		const div = document.createElement('div');
-		div.className = 'drawing-board-control';
+        const div = document.createElement('div');
+        div.className = 'drawing-board-control';
 
-		const btn = document.createElement('button');
-		btn.innerHTML = '💾';
-		btn.onclick = () => {
-			if (!canvas) {
-				return;
-			}
-			const link = document.createElement('a');
-			const imgId = Date.now() % 200;
-			link.download = `diffuse-the-rest-${imgId}.png`;
-			link.href = canvas.toDataURL();
-			link.click();
-		};
-		div.append(btn);
+        const btn = document.createElement('button');
+        btn.innerHTML = '💾';
+        btn.style.backgroundColor = 'white'; // Set button background to white
+        btn.onclick = () => {
+            if (!canvas) {
+                return;
+            }
+            // Create a temporary canvas to ensure white background
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvasSize;
+            tempCanvas.height = canvasSize;
+            const tempCtx = tempCanvas.getContext('2d')!;
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, canvasSize, canvasSize);
+            tempCtx.drawImage(canvas, 0, 0);
 
-		const toolbar = document.querySelector('.drawing-board-toolbar');
-		if (toolbar) {
-			toolbar.appendChild(div);
-		}
-	}
+            const link = document.createElement('a');
+            const imgId = Date.now() % 200;
+            link.download = `diffuse-the-rest-${imgId}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        };
+        div.append(btn);
+
+        const toolbar = document.querySelector('.drawing-board-toolbar');
+        if (toolbar) {
+            toolbar.appendChild(div);
+        }
+    }
+
+    function addExportUsersControl() {
+        const div = document.createElement('div');
+        div.className = 'drawing-board-control';
+
+        const btn = document.createElement('button');
+        btn.innerHTML = '📤';
+        btn.title = 'Export Users';
+        btn.style.backgroundColor = 'white'; // Set button background to white
+        btn.onclick = () => {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const usersJson = JSON.stringify(users, null, 2); // Pretty-print JSON
+            const blob = new Blob([usersJson], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.download = 'users_export.txt';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+        };
+        div.append(btn);
+
+        const toolbar = document.querySelector('.drawing-board-toolbar');
+        if (toolbar) {
+            toolbar.appendChild(div);
+        }
+    }
 
 	function copySketch() {
 		const context = sketchEl.getContext('2d');
@@ -581,7 +668,7 @@ ${htmlImgs.slice(1).join("\n")}
 		// Create and add the draggable toolbar
 		const toolbar = createDraggableToolbar();
 		document.body.appendChild(toolbar);
-		
+
 		// Initialize DrawingBoard with all controls in the correct order
 		drawingBoard = new window.DrawingBoard.Board('board-container', {
 			size: 10,
@@ -611,20 +698,21 @@ ${htmlImgs.slice(1).join("\n")}
 			const colorControl = controls.querySelector('.drawing-board-control-colors');
 			const sizeControl = controls.querySelector('.drawing-board-control-size');
 			const drawingModeControl = controls.querySelector('.drawing-board-control-drawingmode');
-			
+
 			// Add controls to toolbar in the correct order
 			if (colorControl) toolbar.appendChild(colorControl);
 			if (sizeControl) toolbar.appendChild(sizeControl);
 			if (drawingModeControl) toolbar.appendChild(drawingModeControl);
-			
-			// Add clear and save buttons
+
+			// Add clear, save, and export buttons
 			addClearCanvasControl();
 			addDownloadCanvasControl();
-			
+			addExportUsersControl();
+
 			// Remove the old controls container
 			controls.remove();
 		}
-		
+
 		makeLinksTargetBlank();
 	}
 
@@ -739,11 +827,12 @@ ${htmlImgs.slice(1).join("\n")}
 	</div>
 
 	<div class="gray-bar top-bar"></div>
-	<div class="flex flex-wrap gap-x-4 gap-y-2 justify-center my-0 bg-black text-white">
+	<div class="flex flex-wrap gap-x-4 gap-y-2 justify-center my-0 bg-white text-black">
 		<canvas bind:this={sketchEl} class="border-[1.2px] desktop:mt-[34px] {isShowSketch ? '' : 'hidden'}" />
 
 		<div class="flex flex-col items-center {isLoading ? 'pointer-events-none' : ''}">
 			<div id="board-container" bind:this={canvasContainerEl} class="relative" />
+			<div class="gray-bar top-bar"></div> 
 			<div class="flex gap-x-2 mt-3 items-center justify-center">
 				<p class="font-bold">Strength: {strength}</p>
 				<div class="strength-slider-container">
@@ -795,14 +884,14 @@ ${htmlImgs.slice(1).join("\n")}
 			</div>
 		</div>
 	</div>
-	<div class="gray-bar bottom-bar"></div>
+	<!-- <div class="gray-bar bottom-bar"></div> -->
 {/if}
 
 <style>
 	.gray-bar {
 		width: 100%;
-		height: 39px;
-		background-color: #000000;
+		height: 12px;
+		background-color: #ffffff;
 	}
 	span[contenteditable]:empty::before {
 		content: var(--placeholder);
