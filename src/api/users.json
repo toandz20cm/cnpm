@@ -2,11 +2,13 @@
   "users": [
     {
       "username": "toan",
-      "password": "toan"
+      "password": "dG9hbg==",
+      "premium": false
     },
     {
       "username": "toan27",
-      "password": "toan27"
+      "password": "dG9hbjI3",
+      "premium": false
     }
   ]
 }

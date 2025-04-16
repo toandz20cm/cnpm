@@ -11,6 +11,8 @@
 	let loginError = '';
 	let signupError = '';
 	let isMainPage = false;
+	let isPremium = false;
+	let showPremiumModal = false;
 
 	// Handle authentication
 	async function handleLogin(event: Event) {
@@ -31,6 +33,7 @@
 			const data = await response.json();
 			if (data.success) {
 				isAuthenticated = true;
+				isPremium = data.premium;
 				loginError = '';
 				username = '';
 				password = '';
@@ -41,6 +44,52 @@
 		} catch (error) {
 			console.error('Login error:', error);
 			loginError = 'Server error';
+		}
+	}
+
+	function handleUpgradePremium() {
+		showPremiumModal = true;
+	}
+
+	function closePremiumModal() {
+		showPremiumModal = false;
+	}
+
+	async function confirmUpgrade() {
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'upgrade',
+					username
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				isPremium = true;
+				showPremiumModal = false;
+				alert('Upgrade to premium successful!');
+			} else {
+				alert('Upgrade failed: ' + data.error);
+			}
+		} catch (error) {
+			console.error('Upgrade error:', error);
+			alert('Server error');
+		}
+	}
+
+	function handleStrengthChange(e: Event) {
+		const target = e.target as HTMLInputElement;
+		if (!isPremium && parseFloat(target.value) > 0.85) {
+			target.value = '0.85';
+			strength = '0.85';
+			alert('Only premium users can set strength above 0.85');
+		} else {
+			strength = target.value;
 		}
 	}
 
@@ -820,11 +869,91 @@ ${htmlImgs.slice(1).join("\n")}
 	</div>
 {:else if isMainPage}
 	<!-- MAIN PAGE -->
-	<div class="flex justify-end p-4">
+	<div class="flex justify-between p-4">
+		<button on:click={handleUpgradePremium} class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-xl">
+			Upgrade Premium
+		</button>
 		<button on:click={handleLogout} class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-xl">
 			Logout
 		</button>
 	</div>
+
+	{#if showPremiumModal}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+			<div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
+				<div class="flex justify-between items-start mb-6">
+					<h2 class="text-3xl font-bold text-gray-800">Upgrade to Premium</h2>
+					<button on:click={closePremiumModal} class="text-gray-500 hover:text-gray-700">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+					<div class="bg-gray-50 p-6 rounded-lg">
+						<h3 class="text-xl font-semibold mb-4">Free Plan</h3>
+						<ul class="space-y-3 text-gray-600">
+							<li class="flex items-center">
+								<svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								Basic drawing tools
+							</li>
+							<li class="flex items-center">
+								<svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								Strength limit: 0.85
+							</li>
+							<li class="flex items-center">
+								<svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								Basic image generation
+							</li>
+						</ul>
+					</div>
+
+					<div class="bg-yellow-50 p-6 rounded-lg border-2 border-yellow-500">
+						<div class="flex justify-between items-center mb-4">
+							<h3 class="text-xl font-semibold">Premium Plan</h3>
+							<span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">Popular</span>
+						</div>
+						<ul class="space-y-3 text-gray-600">
+							<li class="flex items-center">
+								<svg class="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								Unlimited Strength control
+							</li>
+							<li class="flex items-center">
+								<svg class="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								Priority image generation
+							</li>
+							<li class="flex items-center">
+								<svg class="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								Advanced drawing tools
+							</li>
+						</ul>
+					</div>
+				</div>
+
+				<div class="flex justify-center">
+					<button 
+						on:click={confirmUpgrade}
+						class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-xl text-lg transition duration-300 transform hover:scale-105"
+					>
+						Upgrade Now
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<div class="gray-bar top-bar"></div>
 	<div class="flex flex-wrap gap-x-4 gap-y-2 justify-center my-0 bg-white text-black">
@@ -843,21 +972,34 @@ ${htmlImgs.slice(1).join("\n")}
 						step="0.01"
 						bind:value={strength}
 						class="strength-slider"
+						on:change={handleStrengthChange}
 					/>
 				</div>
 			</div>
 			<div class="flex gap-x-2 mt-3 items-start justify-center">
-				<p class="font-bold align-middle py-2">Prompt:</p>
-				<span
-					class="overflow-auto resize-y py-2 px-3 min-h-[42px] max-h-[500px] !w-[181px] whitespace-pre-wrap inline-block border border-gray-500 shadow-inner outline-none"
-					role="textbox"
-					contenteditable
-					spellcheck="false"
-					dir="auto"
-					maxlength="1000"
-					bind:textContent={promptTxt}
-					on:keydown={onKeyDown}
-				/>
+				<div class="flex flex-col items-center">
+					<p class="font-bold text-gray-700 mb-2">Prompt</p>
+					<div class="relative">
+						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+							<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+							</svg>
+						</div>
+						<div
+							class="overflow-auto resize-y py-3 px-10 min-h-[42px] max-h-[500px] !w-[300px] whitespace-pre-wrap inline-block border-2 border-gray-300 rounded-xl shadow-sm focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition duration-200 bg-white"
+							role="textbox"
+							contenteditable
+							spellcheck="false"
+							dir="auto"
+							maxlength="1000"
+							bind:textContent={promptTxt}
+							on:keydown={onKeyDown}
+						/>
+						<div class="absolute bottom-2 right-2 text-xs text-gray-400">
+							{1000 - (promptTxt?.length || 0)} chars left
+						</div>
+					</div>
+				</div>
 			</div>
 			<div class="flex gap-x-2 mt-3 items-start justify-center {isLoading ? 'animate-pulse' : ''}">
 				<button on:click={submitRequest} class="bg-green-700 hover:bg-green-800 text-white font-bold py-[0.555rem] px-4 rounded-xl">
@@ -949,5 +1091,59 @@ ${htmlImgs.slice(1).join("\n")}
 
 	.strength-slider::-moz-range-thumb:hover {
 		transform: scale(1.1);
+	}
+
+	/* Modal animation */
+	.modal-enter {
+		animation: modalEnter 0.3s ease-out;
+	}
+
+	@keyframes modalEnter {
+		from {
+			opacity: 0;
+			transform: scale(0.95);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	/* Custom scrollbar for prompt input */
+	[contenteditable]::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	[contenteditable]::-webkit-scrollbar-track {
+		background: #f1f1f1;
+		border-radius: 3px;
+	}
+
+	[contenteditable]::-webkit-scrollbar-thumb {
+		background: #888;
+		border-radius: 3px;
+	}
+
+	[contenteditable]::-webkit-scrollbar-thumb:hover {
+		background: #555;
+	}
+
+	/* Placeholder style */
+	[contenteditable]:empty:before {
+		content: attr(placeholder);
+		color: #9ca3af;
+		pointer-events: none;
+	}
+
+	/* Focus styles */
+	[contenteditable]:focus {
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+	}
+
+	/* Smooth resize */
+	[contenteditable] {
+		transition: height 0.2s ease;
 	}
 </style>
