@@ -2,6 +2,85 @@
 	import { onMount, tick } from 'svelte';
 	import ShareWithCommunity from "$lib/ShareWithCommunity.svelte";
 
+	// Authentication state
+	let isAuthenticated = false;
+	let isLoginView = true;
+	let username = '';
+	let password = '';
+	let confirmPassword = '';
+	let loginError = '';
+	let signupError = '';
+	let isMainPage = false;
+
+	// Handle authentication
+	function handleLogin(event: Event) {
+		event.preventDefault();
+		const users = JSON.parse(localStorage.getItem('users') || '[]');
+		const user = users.find((u: { username: string; password: string }) =>
+			u.username === username && u.password === password
+		);
+		if (user) {
+			isAuthenticated = true;
+			loginError = '';
+			username = '';
+			password = '';
+			handleEnterMainPage();
+		} else {
+			loginError = 'Invalid username or password';
+		}
+	}
+
+	function handleSignup(event: Event) {
+		event.preventDefault();
+		if (!username || !password) {
+			signupError = 'Please fill in all fields';
+			return;
+		}
+		if (password !== confirmPassword) {
+			signupError = 'Passwords do not match';
+			return;
+		}
+		const users = JSON.parse(localStorage.getItem('users') || '[]');
+		if (users.some((u: { username: string }) => u.username === username)) {
+			signupError = 'Username already exists';
+			return;
+		}
+		users.push({ username, password });
+		localStorage.setItem('users', JSON.stringify(users));
+		signupError = '';
+		alert('Registration successful! Please log in.');
+		isLoginView = true;
+		username = '';
+		password = '';
+		confirmPassword = '';
+	}
+
+	function toggleView() {
+		isLoginView = !isLoginView;
+		username = '';
+		password = '';
+		confirmPassword = '';
+		loginError = '';
+		signupError = '';
+	}
+
+	function handleLogout() {
+		isAuthenticated = false;
+		isMainPage = false;
+		username = '';
+		password = '';
+		confirmPassword = '';
+		loginError = '';
+		signupError = '';
+		drawingBoard?.reset({ webStorage: false });
+	}
+
+	async function handleEnterMainPage() {
+		isMainPage = true;
+		await tick();
+		await initDrawingBoard();
+	}
+
 	let promptTxt = '';
 	let strength = '0.85';
 	let imagesReturned = '0';
@@ -376,23 +455,55 @@
 		}
 	}
 
-	// original: https://gist.github.com/MonsieurV/fb640c29084c171b4444184858a91bc7
 	function polyfillCreateImageBitmap() {
-		window.createImageBitmap = async function (data: ImageData): Promise<ImageBitmap> {
-			return new Promise((resolve, _) => {
-				const canvas = document.createElement('canvas');
-				const ctx = canvas.getContext('2d');
-				canvas.width = data.width;
-				canvas.height = data.height;
-				ctx!.putImageData(data, 0, 0);
-				const dataURL = canvas.toDataURL();
-				const img = document.createElement('img');
-				img.addEventListener('load', () => {
-					resolve(img as any as ImageBitmap);
+		if (!window.createImageBitmap) {
+			(window as any).createImageBitmap = async function (
+				image: ImageBitmapSource,
+				sx?: number,
+				sy?: number,
+				sw?: number,
+				sh?: number,
+				options?: ImageBitmapOptions
+			): Promise<ImageBitmap> {
+				// Xử lý riêng cho ImageData
+				if (image instanceof ImageData) {
+					const canvas = document.createElement('canvas');
+					const ctx = canvas.getContext('2d')!;
+					canvas.width = image.width;
+					canvas.height = image.height;
+					ctx.putImageData(image, 0, 0);
+
+					const img = new Image();
+					img.src = canvas.toDataURL();
+
+					await new Promise((resolve) => {
+						img.onload = resolve;
+					});
+
+					return img as unknown as ImageBitmap;
+				}
+
+				// Xử lý các trường hợp khác (Blob, HTMLImageElement, etc.)
+				const img = new Image();
+				if (image instanceof Blob) {
+					img.src = URL.createObjectURL(image);
+				} else if (typeof image === 'string') {
+					img.src = image;
+				} else if (image instanceof HTMLCanvasElement) {
+					img.src = image.toDataURL();
+				} else {
+					// HTMLImageElement, HTMLVideoElement, etc.
+					img.src = (image as HTMLImageElement).src;
+				}
+
+				await new Promise((resolve, reject) => {
+					img.onload = resolve;
+					img.onerror = reject;
 				});
-				img.src = dataURL;
-			});
-		};
+
+				return img as unknown as ImageBitmap;
+			};
+		}
 	}
 
 	function makeLinksTargetBlank() {
@@ -446,18 +557,27 @@ ${htmlImgs.slice(1).join("\n")}
 		isUploading = false;
 	}
 
-	onMount(async () => {
-		if (typeof createImageBitmap === 'undefined') {
-			polyfillCreateImageBitmap();
+	async function initDrawingBoard() {
+		let waitCount = 0;
+		while (!window.DrawingBoard && waitCount < 10) {
+			await new Promise((r) => setTimeout(r, 100));
+			waitCount++;
 		}
+
+		if (!window.DrawingBoard) {
+			console.error("DrawingBoard library not loaded");
+			return;
+		}
+
 		const { innerWidth: windowWidth } = window;
 		canvasSize = Math.min(canvasSize, Math.floor(windowWidth * 0.75));
 		canvasContainerEl.style.width = `${canvasSize}px`;
 		canvasContainerEl.style.height = `${canvasSize}px`;
 		sketchEl.style.width = `${canvasSize}px`;
 		sketchEl.style.height = `${canvasSize}px`;
+
 		await tick();
-		
+
 		// Create and add the draggable toolbar
 		const toolbar = createDraggableToolbar();
 		document.body.appendChild(toolbar);
@@ -473,14 +593,17 @@ ${htmlImgs.slice(1).join("\n")}
 			webStorage: false,
 			enlargeYourContainer: true
 		});
-		
+
 		canvas = drawingBoard.canvas;
 		ctx = canvas.getContext('2d');
+		canvas.width = canvasSize;
+		canvas.height = canvasSize;
+
 		canvas.ondragover = function (e) {
 			e.preventDefault();
 			return false;
 		};
-		
+
 		// Move existing controls to the toolbar in the correct order
 		const controls = document.querySelector('.drawing-board-controls');
 		if (controls) {
@@ -503,6 +626,12 @@ ${htmlImgs.slice(1).join("\n")}
 		}
 		
 		makeLinksTargetBlank();
+	}
+
+	onMount(async () => {
+		if (typeof createImageBitmap === 'undefined') {
+			polyfillCreateImageBitmap();
+		}
 	});
 </script>
 
@@ -519,98 +648,165 @@ ${htmlImgs.slice(1).join("\n")}
 </svelte:head>
 
 <svelte:window on:drop|preventDefault|stopPropagation={handleDrop} on:paste={handlePaste} />
-<!-- TOP -->
 
-<div class="gray-bar top-bar"></div>
-<div class="gray-bar top-bar"></div>
+{#if !isAuthenticated}
+	<!-- Login / Signup Form -->
+	<div class="flex flex-col items-center justify-center h-screen bg-gray-100">
+		<div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
+			<h2 class="text-2xl font-bold mb-6 text-center">{isLoginView ? 'Login' : 'Sign Up'}</h2>
 
-<div class="flex flex-wrap gap-x-4 gap-y-2 justify-center my-0 bg-black text-white">
-	<canvas
-		class="border-[1.2px] desktop:mt-[34px] {!isShowSketch ? 'hidden' : ''}"
-		bind:this={sketchEl}
-	/>
-	<div class="flex flex-col items-center {isLoading ? 'pointer-events-none' : ''}">
-		{#if !canvas}
-			<div>
-				<p>Loading…</p>
-				<p>█▒▒▒▒▒▒▒▒▒</p>
-			</div>
-		{/if}
-		<div id="board-container" bind:this={canvasContainerEl} class="relative" />
-		{#if canvas}
-			<div>
-				<div class="flex gap-x-2 mt-3 items-center justify-center">
-					<p class="font-bold">Strength: {strength}</p>
-					<div class="strength-slider-container">
+			{#if isLoginView}
+				<form on:submit={handleLogin}>
+					<div class="mb-4">
+						<label for="username" class="block text-sm font-medium text-gray-700">Username</label>
 						<input
-							type="range"
-							min="0"
-							max="1"
-							step="0.01"
-							bind:value={strength}
-							class="strength-slider"
+							id="username"
+							type="text"
+							bind:value={username}
+							class="mt-1 p-2 w-full border rounded-md"
+							required
 						/>
 					</div>
-				</div>
-				<div class="flex gap-x-2 mt-3 items-start justify-center">
-					<p class="font-bold align-middle py-2">Prompt:</p>
-					<span
-						class="overflow-auto resize-y py-2 px-3 min-h-[42px] max-h-[500px] !w-[181px] whitespace-pre-wrap inline-block border border-gray-500 shadow-inner outline-none"
-						role="textbox"
-						contenteditable
-						style="--placeholder: 'Add prompt'"
-						spellcheck="false"
-						dir="auto"
-						maxlength="1000"
-						bind:textContent={promptTxt}
-						on:keydown={onKeyDown}
+					<div class="mb-6">
+						<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+						<input
+							id="password"
+							type="password"
+							bind:value={password}
+							class="mt-1 p-2 w-full border rounded-md"
+							required
+						/>
+					</div>
+					{#if loginError}
+						<p class="text-red-500 text-sm mb-4">{loginError}</p>
+					{/if}
+					<button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-xl">Login</button>
+				</form>
+				<p class="mt-4 text-center text-sm">
+					Don't have an account?
+					<button on:click={toggleView} class="text-green-700 hover:underline font-medium">Sign up</button>
+				</p>
+			{:else}
+				<form on:submit={handleSignup}>
+					<div class="mb-4">
+						<label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+						<input
+							id="username"
+							type="text"
+							bind:value={username}
+							class="mt-1 p-2 w-full border rounded-md"
+							required
+						/>
+					</div>
+					<div class="mb-4">
+						<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+						<input
+							id="password"
+							type="password"
+							bind:value={password}
+							class="mt-1 p-2 w-full border rounded-md"
+							required
+						/>
+					</div>
+					<div class="mb-6">
+						<label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+						<input
+							id="confirm-password"
+							type="password"
+							bind:value={confirmPassword}
+							class="mt-1 p-2 w-full border rounded-md"
+							required
+						/>
+					</div>
+					{#if signupError}
+						<p class="text-red-500 text-sm mb-4">{signupError}</p>
+					{/if}
+					<button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-xl">Sign Up</button>
+				</form>
+				<p class="mt-4 text-center text-sm">
+					Already have an account?
+					<button on:click={toggleView} class="text-green-700 hover:underline font-medium">Login</button>
+				</p>
+			{/if}
+		</div>
+	</div>
+{:else if isMainPage}
+	<!-- MAIN PAGE -->
+	<div class="flex justify-end p-4">
+		<button on:click={handleLogout} class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-xl">
+			Logout
+		</button>
+	</div>
+
+	<div class="gray-bar top-bar"></div>
+	<div class="flex flex-wrap gap-x-4 gap-y-2 justify-center my-0 bg-black text-white">
+		<canvas bind:this={sketchEl} class="border-[1.2px] desktop:mt-[34px] {isShowSketch ? '' : 'hidden'}" />
+
+		<div class="flex flex-col items-center {isLoading ? 'pointer-events-none' : ''}">
+			<div id="board-container" bind:this={canvasContainerEl} class="relative" />
+			<div class="flex gap-x-2 mt-3 items-center justify-center">
+				<p class="font-bold">Strength: {strength}</p>
+				<div class="strength-slider-container">
+					<input
+						type="range"
+						min="0"
+						max="1"
+						step="0.01"
+						bind:value={strength}
+						class="strength-slider"
 					/>
 				</div>
-				<div class="flex gap-x-2 mt-3 items-start justify-center {isLoading ? 'animate-pulse' : ''}">
-					<button
-						on:click={submitRequest}
-						class="bg-green-700 hover:bg-green-800 text-white font-bold py-[0.555rem] px-4 rounded-xl"
-					>
-						Let's go 🪄
-					</button>
-				</div>
-				<div class="mt-4">
-					<label class="bg-green-700 hover:bg-green-800 text-white font-bold py-[0.555rem] px-4 rounded-xl">
-						<input
-							accept="image/*"
-							bind:this={fileInput}
-							on:change={onfImgUpload}
-							style="display: none;"
-							type="file"
-						/>
-						upload img
-					</label>
-					<p class="hidden desktop:inline mt-2 opacity-50">
-						pro tip: upload img by dropping on the canvas
-					</p>
-				</div>
-				<div>
-					<p class="my-4">
-						Images returned: {imagesReturned}
-					</p>
-				</div>
 			</div>
-		{/if}
+			<div class="flex gap-x-2 mt-3 items-start justify-center">
+				<p class="font-bold align-middle py-2">Prompt:</p>
+				<span
+					class="overflow-auto resize-y py-2 px-3 min-h-[42px] max-h-[500px] !w-[181px] whitespace-pre-wrap inline-block border border-gray-500 shadow-inner outline-none"
+					role="textbox"
+					contenteditable
+					spellcheck="false"
+					dir="auto"
+					maxlength="1000"
+					bind:textContent={promptTxt}
+					on:keydown={onKeyDown}
+				/>
+			</div>
+			<div class="flex gap-x-2 mt-3 items-start justify-center {isLoading ? 'animate-pulse' : ''}">
+				<button on:click={submitRequest} class="bg-green-700 hover:bg-green-800 text-white font-bold py-[0.555rem] px-4 rounded-xl">
+					Let's go 🪄
+				</button>
+			</div>
+			<div class="mt-4">
+				<label class="bg-green-700 hover:bg-green-800 text-white font-bold py-[0.555rem] px-4 rounded-xl">
+					<input
+						accept="image/*"
+						bind:this={fileInput}
+						on:change={onfImgUpload}
+						style="display: none;"
+						type="file"
+					/>
+					upload img
+				</label>
+				<p class="hidden desktop:inline mt-2 opacity-50">
+					pro tip: upload img by dropping on the canvas
+				</p>
+			</div>
+			<div>
+				<p class="my-4">Images returned: {imagesReturned}</p>
+			</div>
+		</div>
 	</div>
-</div>
-
-<div class="gray-bar bottom-bar"></div>
+	<div class="gray-bar bottom-bar"></div>
+{/if}
 
 <style>
 	.gray-bar {
-		width: 100%; 
-		height: 39px; 
-		background-color: #000000; 
+		width: 100%;
+		height: 39px;
+		background-color: #000000;
 	}
-	
 	span[contenteditable]:empty::before {
 		content: var(--placeholder);
-		color: rgb(223, 226, 233);
+		color: rgba(156, 163, 175);
 	}
 
 	.strength-slider-container {
