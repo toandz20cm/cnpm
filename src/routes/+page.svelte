@@ -983,10 +983,12 @@ ${htmlImgs.slice(1).join("\n")}
 
 {#if !isAuthenticated}
 	<!-- Login / Signup Form -->
-	<div class="flex flex-col items-center justify-center h-screen bg-gray-100">
-		<div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
-			<div class="flex justify-between items-center mb-6">
-				<h2 class="text-2xl font-bold text-center">{isLoginView ? 'Login' : 'Sign Up'}</h2>
+	<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-4">
+		<div class="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full max-w-sm transform transition-all duration-300 hover:scale-[1.02]">
+			<div class="flex justify-between items-center mb-8">
+				<h2 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+					{isLoginView ? 'Welcome Back' : 'Create Account'}
+				</h2>
 				<button 
 					on:click={() => { 
 						showAdminLoginModal = true;
@@ -994,83 +996,151 @@ ${htmlImgs.slice(1).join("\n")}
 						adminPassword = '';
 						adminError = '';
 					}}
-					class="text-sm text-gray-600 hover:text-gray-800"
+					class="text-sm text-gray-600 hover:text-gray-800 transition duration-200"
 				>
 					( ADMIN )
 				</button>
 			</div>
 
 			{#if isLoginView}
-				<form on:submit={handleLogin}>
-					<div class="mb-4">
-						<label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-						<input
-							id="username"
-							type="text"
-							bind:value={username}
-							class="mt-1 p-2 w-full border rounded-md"
-							required
-						/>
-					</div>
-					<div class="mb-6">
-						<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-						<input
-							id="password"
-							type="password"
-							bind:value={password}
-							class="mt-1 p-2 w-full border rounded-md"
-							required
-						/>
+				<form on:submit={handleLogin} class="space-y-6">
+					<div class="space-y-4">
+						<div class="relative">
+							<label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+								</div>
+								<input
+									id="username"
+									type="text"
+									bind:value={username}
+									class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+									required
+									placeholder="Enter your username"
+								/>
+							</div>
+						</div>
+						<div class="relative">
+							<label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+									</svg>
+								</div>
+								<input
+									id="password"
+									type="password"
+									bind:value={password}
+									class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+									required
+									placeholder="Enter your password"
+								/>
+							</div>
+						</div>
 					</div>
 					{#if loginError}
-						<p class="text-red-500 text-sm mb-4">{loginError}</p>
+						<div class="p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+							{loginError}
+						</div>
 					{/if}
-					<button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-xl">Login</button>
+					<button 
+						type="submit" 
+						class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-4 rounded-xl transition duration-300 transform hover:scale-[1.02] hover:shadow-lg"
+					>
+						Login
+					</button>
 				</form>
-				<p class="mt-4 text-center text-sm">
+				<p class="mt-6 text-center text-sm text-gray-600">
 					Don't have an account?
-					<button on:click={toggleView} class="text-green-700 hover:underline font-medium">Sign up</button>
+					<button 
+						on:click={toggleView} 
+						class="text-purple-600 hover:text-purple-800 font-medium transition duration-200"
+					>
+						Sign up
+					</button>
 				</p>
 			{:else}
-				<form on:submit={handleSignup}>
-					<div class="mb-4">
-						<label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-						<input
-							id="username"
-							type="text"
-							bind:value={username}
-							class="mt-1 p-2 w-full border rounded-md"
-							required
-						/>
-					</div>
-					<div class="mb-4">
-						<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-						<input
-							id="password"
-							type="password"
-							bind:value={password}
-							class="mt-1 p-2 w-full border rounded-md"
-							required
-						/>
-					</div>
-					<div class="mb-6">
-						<label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-						<input
-							id="confirm-password"
-							type="password"
-							bind:value={confirmPassword}
-							class="mt-1 p-2 w-full border rounded-md"
-							required
-						/>
+				<form on:submit={handleSignup} class="space-y-6">
+					<div class="space-y-4">
+						<div class="relative">
+							<label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+								</div>
+								<input
+									id="username"
+									type="text"
+									bind:value={username}
+									class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+									required
+									placeholder="Choose a username"
+								/>
+							</div>
+						</div>
+						<div class="relative">
+							<label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+									</svg>
+								</div>
+								<input
+									id="password"
+									type="password"
+									bind:value={password}
+									class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+									required
+									placeholder="Create a password"
+								/>
+							</div>
+						</div>
+						<div class="relative">
+							<label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+									</svg>
+								</div>
+								<input
+									id="confirm-password"
+									type="password"
+									bind:value={confirmPassword}
+									class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+									required
+									placeholder="Confirm your password"
+								/>
+							</div>
+						</div>
 					</div>
 					{#if signupError}
-						<p class="text-red-500 text-sm mb-4">{signupError}</p>
+						<div class="p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+							{signupError}
+						</div>
 					{/if}
-					<button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-xl">Sign Up</button>
+					<button 
+						type="submit" 
+						class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-4 rounded-xl transition duration-300 transform hover:scale-[1.02] hover:shadow-lg"
+					>
+						Sign Up
+					</button>
 				</form>
-				<p class="mt-4 text-center text-sm">
+				<p class="mt-6 text-center text-sm text-gray-600">
 					Already have an account?
-					<button on:click={toggleView} class="text-green-700 hover:underline font-medium">Login</button>
+					<button 
+						on:click={toggleView} 
+						class="text-purple-600 hover:text-purple-800 font-medium transition duration-200"
+					>
+						Login
+					</button>
 				</p>
 			{/if}
 		</div>
@@ -1232,7 +1302,7 @@ ${htmlImgs.slice(1).join("\n")}
 	{/if}
 
 	{#if showNotificationHistory}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 			<div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
 				<div class="flex justify-between items-center mb-4">
 					<h2 class="text-xl font-bold text-gray-800">Notification History</h2>
@@ -1244,7 +1314,7 @@ ${htmlImgs.slice(1).join("\n")}
 				</div>
 				<div class="space-y-4 max-h-96 overflow-y-auto">
 					{#each notifications as notification}
-						<div class="p-4 bg-gray-50 rounded-lg">
+						<div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-200">
 							<div class="flex justify-between items-start">
 								<p class="text-gray-700">{notification.message}</p>
 								<span class="text-xs text-gray-500">{notification.timestamp}</span>
@@ -1345,7 +1415,7 @@ ${htmlImgs.slice(1).join("\n")}
 						class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition duration-150"
 					>
 						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 11-6 0v-1m6 0H9" />
 						</svg>
 						Logout
 					</button>
@@ -1355,7 +1425,7 @@ ${htmlImgs.slice(1).join("\n")}
 	</div>
 
 	{#if showSecurityModal}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[90]">
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 			<div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
 				<div class="flex justify-between items-center mb-4">
 					<h2 class="text-xl font-bold text-gray-800">Change Password</h2>
@@ -1418,7 +1488,7 @@ ${htmlImgs.slice(1).join("\n")}
 	{/if}
 
 	{#if showPremiumModal}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[90]">
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
 			<div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
 				<div class="flex justify-between items-start mb-6">
 					<h2 class="text-3xl font-bold text-gray-800">Upgrade to Premium</h2>
@@ -1502,21 +1572,23 @@ ${htmlImgs.slice(1).join("\n")}
 			<div id="board-container" bind:this={canvasContainerEl} class="relative" />
 			<div class="gray-bar top-bar"></div> 
 			<div class="flex gap-x-2 mt-3 items-center justify-center">
-				<p class="font-bold">Strength: {strength}</p>
-				<div class="strength-slider-container">
-					<input
-						type="range"
-						min="0"
-						max="1"
-						step="0.01"
-						bind:value={strength}
-						class="strength-slider"
-						on:change={handleStrengthChange}
-					/>
+				<div class="bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100">
+					<p class="font-bold text-gray-700 mb-2">Strength: {strength}</p>
+					<div class="strength-slider-container">
+						<input
+							type="range"
+							min="0"
+							max="1"
+							step="0.01"
+							bind:value={strength}
+							class="strength-slider"
+							on:change={handleStrengthChange}
+						/>
+					</div>
 				</div>
 			</div>
 			<div class="flex gap-x-2 mt-3 items-start justify-center">
-				<div class="flex flex-col items-center">
+				<div class="bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100 w-full max-w-2xl">
 					<p class="font-bold text-gray-700 mb-2">Prompt</p>
 					<div class="relative">
 						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1524,16 +1596,13 @@ ${htmlImgs.slice(1).join("\n")}
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
 							</svg>
 						</div>
-						<div
-							class="overflow-auto resize-y py-3 px-10 min-h-[42px] max-h-[500px] !w-[300px] whitespace-pre-wrap inline-block border-2 border-gray-300 rounded-xl shadow-sm focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition duration-200 bg-white"
-							role="textbox"
-							contenteditable
-							spellcheck="false"
-							dir="auto"
-							maxlength="1000"
-							bind:textContent={promptTxt}
+						<textarea
+							class="w-full min-h-[50px] max-h-[150px] py-3 px-10 border-2 border-gray-200 rounded-xl shadow-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition duration-200 bg-white/50 backdrop-blur-sm resize-y font-medium text-gray-700 placeholder-gray-400 tracking-wide leading-relaxed"
+							placeholder="Enter your prompt here..."
+							bind:value={promptTxt}
 							on:keydown={onKeyDown}
-						/>
+							maxlength="1000"
+						></textarea>
 						<div class="absolute bottom-2 right-2 text-xs text-gray-400">
 							{1000 - (promptTxt?.length || 0)} chars left
 						</div>
@@ -1541,12 +1610,30 @@ ${htmlImgs.slice(1).join("\n")}
 				</div>
 			</div>
 			<div class="flex gap-x-2 mt-3 items-start justify-center {isLoading ? 'animate-pulse' : ''}">
-				<button on:click={submitRequest} class="bg-green-700 hover:bg-green-800 text-white font-bold py-[0.555rem] px-4 rounded-xl">
-					Let's go 🪄
+				<button 
+					on:click={submitRequest} 
+					class="relative group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
+				>
+					<span class="absolute inset-0 w-full h-full mt-1 ml-1 transition-all duration-300 bg-black rounded-xl group-hover:mt-0 group-hover:ml-0"></span>
+					<span class="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl"></span>
+					<span class="relative flex items-center space-x-2">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+						</svg>
+						<span>Let's go 🪄</span>
+					</span>
 				</button>
 			</div>
 			<div class="mt-4">
-				<label class="bg-green-700 hover:bg-green-800 text-white font-bold py-[0.555rem] px-4 rounded-xl">
+				<label class="relative group inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-300 transform bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 cursor-pointer">
+					<span class="absolute inset-0 w-full h-full mt-1 ml-1 transition-all duration-300 bg-black rounded-xl group-hover:mt-0 group-hover:ml-0"></span>
+					<span class="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl"></span>
+					<span class="relative flex items-center space-x-2">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+						<span>Upload Image</span>
+					</span>
 					<input
 						accept="image/*"
 						bind:this={fileInput}
@@ -1554,9 +1641,8 @@ ${htmlImgs.slice(1).join("\n")}
 						style="display: none;"
 						type="file"
 					/>
-					upload img
 				</label>
-				<p class="hidden desktop:inline mt-2 opacity-50">
+				<p class="hidden desktop:inline mt-2 text-gray-500 text-sm">
 					pro tip: upload img by dropping on the canvas
 				</p>
 			</div>
@@ -1565,13 +1651,32 @@ ${htmlImgs.slice(1).join("\n")}
 			</div>
 		</div>
 	</div>
-	<div class="gray-bar bottom-bar"></div>
+	<!-- <div class="gray-bar bottom-bar"></div> -->
+
+	<!-- Share to Community Button -->
+	<div class="fixed bottom-4 right-4 z-40">
+		<a 
+			href="https://short.com.vn/IzfZ" 
+			target="_blank"
+			class="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-300 transform bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-xl hover:scale-105 hover:shadow-lg hover:shadow-pink-500/50"
+		>
+			<span class="absolute inset-0 w-full h-full mt-1 ml-1 transition-all duration-300 bg-black rounded-xl group-hover:mt-0 group-hover:ml-0"></span>
+			<span class="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-xl"></span>
+			<span class="absolute bottom-0 right-0 w-8 h-8 -mb-1 -mr-1 transition-all duration-300 transform translate-x-1 translate-y-1 bg-gradient-to-r from-purple-500 to-pink-500 group-hover:translate-x-0 group-hover:translate-y-0"></span>
+			<span class="relative flex items-center space-x-2">
+				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+				</svg>
+				<span>Share to Community</span>
+			</span>
+		</a>
+	</div>
 {/if}
 
 <style>
 	.gray-bar {
 		width: 100%;
-		height: 30px;
+		height: 12px;
 		background-color: #ffffff;
 	}
 	span[contenteditable]:empty::before {
@@ -1582,6 +1687,13 @@ ${htmlImgs.slice(1).join("\n")}
 	.strength-slider-container {
 		width: 200px;
 		padding: 0 10px;
+		background: linear-gradient(to right, 
+			rgba(255, 0, 0, 0.1), rgba(255, 128, 0, 0.1), rgba(255, 255, 0, 0.1), 
+			rgba(128, 255, 0, 0.1), rgba(0, 255, 0, 0.1), rgba(0, 255, 128, 0.1), 
+			rgba(0, 255, 255, 0.1), rgba(0, 128, 255, 0.1), rgba(0, 0, 255, 0.1), 
+			rgba(128, 0, 255, 0.1), rgba(255, 0, 255, 0.1), rgba(255, 0, 128, 0.1), 
+			rgba(255, 0, 0, 0.1));
+		border-radius: 8px;
 	}
 
 	.strength-slider {
@@ -1610,12 +1722,13 @@ ${htmlImgs.slice(1).join("\n")}
 		border-radius: 50%;
 		background: white;
 		cursor: pointer;
-		box-shadow: 0 0 2px rgba(0,0,0,0.5);
-		transition: transform 0.1s;
+		box-shadow: 0 0 4px rgba(0,0,0,0.3);
+		transition: transform 0.1s, box-shadow 0.1s;
 	}
 
 	.strength-slider::-webkit-slider-thumb:hover {
 		transform: scale(1.1);
+		box-shadow: 0 0 6px rgba(0,0,0,0.4);
 	}
 
 	.strength-slider::-moz-range-thumb {
@@ -1624,12 +1737,46 @@ ${htmlImgs.slice(1).join("\n")}
 		border-radius: 50%;
 		background: white;
 		cursor: pointer;
-		box-shadow: 0 0 2px rgba(0,0,0,0.5);
-		transition: transform 0.1s;
+		box-shadow: 0 0 4px rgba(0,0,0,0.3);
+		transition: transform 0.1s, box-shadow 0.1s;
 	}
 
 	.strength-slider::-moz-range-thumb:hover {
 		transform: scale(1.1);
+		box-shadow: 0 0 6px rgba(0,0,0,0.4);
+	}
+
+	/* Custom scrollbar for prompt input */
+	[contenteditable]::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	[contenteditable]::-webkit-scrollbar-track {
+		background: rgba(241, 241, 241, 0.5);
+		border-radius: 3px;
+	}
+
+	[contenteditable]::-webkit-scrollbar-thumb {
+		background: rgba(147, 51, 234, 0.5);
+		border-radius: 3px;
+	}
+
+	[contenteditable]::-webkit-scrollbar-thumb:hover {
+		background: rgba(147, 51, 234, 0.7);
+	}
+
+	/* Focus styles for prompt input */
+	[contenteditable]:focus {
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+	}
+
+	/* Placeholder style */
+	[contenteditable]:empty:before {
+		content: attr(placeholder);
+		color: #9ca3af;
+		 pointer-events: none;
 	}
 
 	/* Modal animation */
@@ -1779,5 +1926,54 @@ ${htmlImgs.slice(1).join("\n")}
 
 	.animate-marquee {
 		animation: marquee 20s linear infinite;
+	}
+
+	/* Custom scrollbar for textarea */
+	textarea::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	textarea::-webkit-scrollbar-track {
+		background: rgba(241, 241, 241, 0.5);
+		border-radius: 3px;
+	}
+
+	textarea::-webkit-scrollbar-thumb {
+		background: rgba(147, 51, 234, 0.5);
+		border-radius: 3px;
+	}
+
+	textarea::-webkit-scrollbar-thumb:hover {
+		background: rgba(147, 51, 234, 0.7);
+	}
+
+	/* Focus styles for textarea */
+	textarea:focus {
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+	}
+
+	/* Text animation */
+	@keyframes textGlow {
+		0% {
+			text-shadow: 0 0 5px rgba(147, 51, 234, 0.2);
+		}
+		50% {
+			text-shadow: 0 0 10px rgba(147, 51, 234, 0.3);
+		}
+		100% {
+			text-shadow: 0 0 5px rgba(147, 51, 234, 0.2);
+		}
+	}
+
+	textarea {
+		animation: textGlow 3s infinite;
+		transition: all 0.3s ease;
+	}
+
+	textarea:focus {
+		animation: none;
+		text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
 	}
 </style>

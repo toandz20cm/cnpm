@@ -15,42 +15,6 @@
       "username": "toannn",
       "password": "dG9hbm5u",
       "premium": false
-    },
-    {
-      "username": "toan",
-      "password": "dG9hbg==",
-      "premium": false,
-      "isAdmin": false
-    },
-    {
-      "username": "abcxyz",
-      "password": "YWJjeHl6",
-      "premium": false,
-      "isAdmin": false
-    },
-    {
-      "username": "phucram",
-      "password": "cGh1Y3JhbQ==",
-      "premium": false,
-      "isAdmin": false
-    },
-    {
-      "username": "dat09",
-      "password": "ZGF0MDk=",
-      "premium": false,
-      "isAdmin": false
-    },
-    {
-      "username": "duong404",
-      "password": "ZHVvbmc0MDQ=",
-      "premium": false,
-      "isAdmin": false
-    },
-    {
-      "username": "minhthu",
-      "password": "bWluaHRodQ==",
-      "premium": false,
-      "isAdmin": false
     }
   ],
   "notifications": [
