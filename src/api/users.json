@@ -1,14 +1,73 @@
 {
   "users": [
     {
-      "username": "toan",
-      "password": "dG9hbg==",
-      "premium": false
+      "username": "admin",
+      "password": "MQ==",
+      "premium": true,
+      "isAdmin": true
     },
     {
       "username": "toan27",
       "password": "dG9hbjI3",
       "premium": false
+    },
+    {
+      "username": "toannn",
+      "password": "dG9hbm5u",
+      "premium": false
+    },
+    {
+      "username": "toan",
+      "password": "dG9hbg==",
+      "premium": false,
+      "isAdmin": false
+    },
+    {
+      "username": "abcxyz",
+      "password": "YWJjeHl6",
+      "premium": false,
+      "isAdmin": false
+    },
+    {
+      "username": "phucram",
+      "password": "cGh1Y3JhbQ==",
+      "premium": false,
+      "isAdmin": false
+    },
+    {
+      "username": "dat09",
+      "password": "ZGF0MDk=",
+      "premium": false,
+      "isAdmin": false
+    },
+    {
+      "username": "duong404",
+      "password": "ZHVvbmc0MDQ=",
+      "premium": false,
+      "isAdmin": false
+    },
+    {
+      "username": "minhthu",
+      "password": "bWluaHRodQ==",
+      "premium": false,
+      "isAdmin": false
+    }
+  ],
+  "notifications": [
+    {
+      "id": 1744902627048,
+      "message": "helllooooo eveeerryy one",
+      "timestamp": "2025-04-17T15:10:27.048Z"
+    },
+    {
+      "id": 1744903481696,
+      "message": "ê do mấy cu",
+      "timestamp": "2025-04-17T15:24:41.696Z"
+    },
+    {
+      "id": 1744904467888,
+      "message": "weooooooooooo cămmmmmmmm",
+      "timestamp": "2025-04-17T15:41:07.888Z"
     }
   ]
 }

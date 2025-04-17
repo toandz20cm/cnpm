@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import ShareWithCommunity from "$lib/ShareWithCommunity.svelte";
+	import { slide } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
+	import { scale } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
+	import { blur } from 'svelte/transition';
+	import { crossfade } from 'svelte/transition';
+	import { draw } from 'svelte/transition';
+	import { createEventDispatcher } from 'svelte';
 
 	// Authentication state
 	let isAuthenticated = false;
@@ -12,7 +20,25 @@
 	let signupError = '';
 	let isMainPage = false;
 	let isPremium = false;
+	let isAdmin = false;
 	let showPremiumModal = false;
+	let showUserMenu = false;
+	let showSecurityModal = false;
+	let showAdminLoginModal = false;
+	let showAdminPanel = false;
+	let showNotificationHistory = false;
+	let currentPassword = '';
+	let newPassword = '';
+	let confirmNewPassword = '';
+	let securityError = '';
+	let adminError = '';
+	let users: { username: string; premium: boolean; isAdmin: boolean }[] = [];
+	let adminUsername = '';
+	let adminPassword = '';
+	let notifications: { id: number; message: string; timestamp: string }[] = [];
+	let currentNotification: { id: number; message: string; timestamp: string } | null = null;
+	let showNotification = false;
+	let newNotificationMessage = '';
 
 	// Handle authentication
 	async function handleLogin(event: Event) {
@@ -34,6 +60,12 @@
 			if (data.success) {
 				isAuthenticated = true;
 				isPremium = data.premium;
+				isAdmin = data.isAdmin;
+				notifications = data.notifications || [];
+				if (notifications.length > 0) {
+					currentNotification = notifications[notifications.length - 1];
+					showNotification = true;
+				}
 				loginError = '';
 				username = '';
 				password = '';
@@ -44,6 +76,97 @@
 		} catch (error) {
 			console.error('Login error:', error);
 			loginError = 'Server error';
+		}
+	}
+
+	async function handleAdminLogin(event: Event) {
+		event.preventDefault();
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'getUsers',
+					username: adminUsername,
+					password: adminPassword
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				users = data.users;
+				notifications = data.notifications || [];
+				if (notifications.length > 0) {
+					currentNotification = notifications[notifications.length - 1];
+				}
+				adminError = '';
+				showAdminLoginModal = false;
+				showAdminPanel = true;
+			} else {
+				adminError = data.error || 'Invalid admin credentials';
+			}
+		} catch (error) {
+			console.error('Admin login error:', error);
+			adminError = 'Server error';
+		}
+	}
+
+	async function handleDeleteUser(targetUsername: string) {
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'deleteUser',
+					username: adminUsername,
+					password: adminPassword,
+					targetUsername
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				users = users.filter(user => user.username !== targetUsername);
+			} else {
+				adminError = data.error || 'Failed to delete user';
+			}
+		} catch (error) {
+			console.error('Delete user error:', error);
+			adminError = 'Server error';
+		}
+	}
+
+	async function handleTogglePremium(targetUsername: string) {
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'togglePremium',
+					username: adminUsername,
+					password: adminPassword,
+					targetUsername
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				const userIndex = users.findIndex(user => user.username === targetUsername);
+				if (userIndex !== -1) {
+					users[userIndex].premium = data.premium;
+				}
+			} else {
+				adminError = data.error || 'Failed to toggle premium status';
+			}
+		} catch (error) {
+			console.error('Toggle premium error:', error);
+			adminError = 'Server error';
 		}
 	}
 
@@ -489,32 +612,6 @@
         }
     }
 
-    function addExportUsersControl() {
-        const div = document.createElement('div');
-        div.className = 'drawing-board-control';
-
-        const btn = document.createElement('button');
-        btn.innerHTML = '📤';
-        btn.title = 'Export Users';
-        btn.style.backgroundColor = 'white'; // Set button background to white
-        btn.onclick = () => {
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const usersJson = JSON.stringify(users, null, 2); // Pretty-print JSON
-            const blob = new Blob([usersJson], { type: 'text/plain' });
-            const link = document.createElement('a');
-            link.download = 'users_export.txt';
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            URL.revokeObjectURL(link.href);
-        };
-        div.append(btn);
-
-        const toolbar = document.querySelector('.drawing-board-toolbar');
-        if (toolbar) {
-            toolbar.appendChild(div);
-        }
-    }
-
 	function copySketch() {
 		const context = sketchEl.getContext('2d');
 
@@ -753,10 +850,9 @@ ${htmlImgs.slice(1).join("\n")}
 			if (sizeControl) toolbar.appendChild(sizeControl);
 			if (drawingModeControl) toolbar.appendChild(drawingModeControl);
 
-			// Add clear, save, and export buttons
+			// Add clear and save buttons
 			addClearCanvasControl();
 			addDownloadCanvasControl();
-			addExportUsersControl();
 
 			// Remove the old controls container
 			controls.remove();
@@ -770,6 +866,105 @@ ${htmlImgs.slice(1).join("\n")}
 			polyfillCreateImageBitmap();
 		}
 	});
+
+	function toggleUserMenu() {
+		showUserMenu = !showUserMenu;
+	}
+
+	function closeUserMenu() {
+		showUserMenu = false;
+	}
+
+	function toggleSecurityModal() {
+		showSecurityModal = !showSecurityModal;
+		showUserMenu = false;
+	}
+
+	async function handleChangePassword() {
+		if (!currentPassword || !newPassword || !confirmNewPassword) {
+			securityError = 'Please fill in all fields';
+			return;
+		}
+
+		if (newPassword !== confirmNewPassword) {
+			securityError = 'New passwords do not match';
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'changePassword',
+					username,
+					currentPassword,
+					newPassword
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				showSecurityModal = false;
+				currentPassword = '';
+				newPassword = '';
+				confirmNewPassword = '';
+				securityError = '';
+				alert('Password changed successfully!');
+			} else {
+				securityError = data.error || 'Failed to change password';
+			}
+		} catch (error) {
+			console.error('Change password error:', error);
+			securityError = 'Server error';
+		}
+	}
+
+	async function handleSendNotification() {
+		if (!newNotificationMessage.trim()) {
+			adminError = 'Please enter a notification message';
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'sendNotification',
+					username: adminUsername,
+					password: adminPassword,
+					message: newNotificationMessage
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				notifications = data.notifications;
+				currentNotification = notifications[notifications.length - 1];
+				newNotificationMessage = '';
+				adminError = '';
+			} else {
+				adminError = data.error || 'Failed to send notification';
+			}
+		} catch (error) {
+			console.error('Send notification error:', error);
+			adminError = 'Server error';
+		}
+	}
+
+	function dismissNotification() {
+		showNotification = false;
+	}
+
+	function toggleNotificationHistory() {
+		showNotificationHistory = !showNotificationHistory;
+		showUserMenu = false;
+	}
 </script>
 
 <svelte:head>
@@ -790,7 +985,20 @@ ${htmlImgs.slice(1).join("\n")}
 	<!-- Login / Signup Form -->
 	<div class="flex flex-col items-center justify-center h-screen bg-gray-100">
 		<div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
-			<h2 class="text-2xl font-bold mb-6 text-center">{isLoginView ? 'Login' : 'Sign Up'}</h2>
+			<div class="flex justify-between items-center mb-6">
+				<h2 class="text-2xl font-bold text-center">{isLoginView ? 'Login' : 'Sign Up'}</h2>
+				<button 
+					on:click={() => { 
+						showAdminLoginModal = true;
+						adminUsername = '';
+						adminPassword = '';
+						adminError = '';
+					}}
+					class="text-sm text-gray-600 hover:text-gray-800"
+				>
+					( ADMIN )
+				</button>
+			</div>
 
 			{#if isLoginView}
 				<form on:submit={handleLogin}>
@@ -867,19 +1075,350 @@ ${htmlImgs.slice(1).join("\n")}
 			{/if}
 		</div>
 	</div>
+
+	{#if showAdminLoginModal}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+			<div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
+				<div class="flex justify-between items-center mb-4">
+					<h2 class="text-xl font-bold text-gray-800">Admin Login</h2>
+					<button on:click={() => { showAdminLoginModal = false; adminError = ''; }} class="text-gray-500 hover:text-gray-700 transition duration-200">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+
+				{#if adminError}
+					<div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+						{adminError}
+					</div>
+				{/if}
+
+				<form on:submit={handleAdminLogin}>
+					<div class="mb-4">
+						<label for="admin-username" class="block text-sm font-medium text-gray-700">Username</label>
+						<input
+							id="admin-username"
+							type="text"
+							bind:value={adminUsername}
+							class="mt-1 p-2 w-full border rounded-md"
+							required
+						/>
+					</div>
+					<div class="mb-6">
+						<label for="admin-password" class="block text-sm font-medium text-gray-700">Password</label>
+						<input
+							id="admin-password"
+							type="password"
+							bind:value={adminPassword}
+							class="mt-1 p-2 w-full border rounded-md"
+							required
+						/>
+					</div>
+					<button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-xl">
+						Login as Admin
+					</button>
+				</form>
+			</div>
+		</div>
+	{/if}
+
+	{#if showAdminPanel}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+			<div class="bg-white rounded-xl p-6 max-w-4xl w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
+				<div class="flex justify-between items-center mb-4">
+					<h2 class="text-xl font-bold text-gray-800">Admin Panel</h2>
+					<button on:click={() => { showAdminPanel = false; adminError = ''; }} class="text-gray-500 hover:text-gray-700 transition duration-200">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+
+				{#if adminError}
+					<div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+						{adminError}
+					</div>
+				{/if}
+
+				<div class="mb-6">
+					<div class="flex items-center space-x-4 mb-4">
+						<h3 class="text-lg font-semibold text-gray-700">Send Notification</h3>
+					</div>
+					<div class="flex space-x-4">
+						<input
+							type="text"
+							bind:value={newNotificationMessage}
+							placeholder="Enter notification message..."
+							class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+						/>
+						<button
+							on:click={handleSendNotification}
+							class="px-4 py-2 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition duration-200"
+						>
+							Send
+						</button>
+					</div>
+				</div>
+
+				<div class="mb-4">
+					<p class="text-sm text-gray-600">Total Users: {users.length}</p>
+				</div>
+
+				<div class="overflow-x-auto">
+					<table class="min-w-full divide-y divide-gray-200">
+						<thead class="bg-gray-50">
+							<tr>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Premium</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="bg-white divide-y divide-gray-200">
+							{#each users as user}
+								<tr>
+									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+										<button
+											on:click={() => handleTogglePremium(user.username)}
+											class="px-2 py-1 text-xs font-medium rounded-full {user.premium ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}"
+										>
+											{user.premium ? 'Premium' : 'Free'}
+										</button>
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+										<span class="px-2 py-1 text-xs font-medium rounded-full {user.isAdmin ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
+											{user.isAdmin ? 'Admin' : 'User'}
+										</span>
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+										{#if !user.isAdmin}
+											<button
+												on:click={() => handleDeleteUser(user.username)}
+												class="text-red-600 hover:text-red-800 font-medium"
+											>
+												Delete
+											</button>
+										{/if}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	{#if showNotification && currentNotification}
+		<div class="fixed top-0 left-0 right-0 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white p-4 z-50 animate-slide-in">
+			<div class="max-w-4xl mx-auto flex items-center justify-between">
+				<div class="flex-1 overflow-hidden">
+					<div class="animate-marquee whitespace-nowrap">
+						{currentNotification.message}
+					</div>
+				</div>
+				<button
+					on:click={dismissNotification}
+					class="ml-4 text-white opacity-50 hover:opacity-100 transition duration-200"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	{#if showNotificationHistory}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+			<div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
+				<div class="flex justify-between items-center mb-4">
+					<h2 class="text-xl font-bold text-gray-800">Notification History</h2>
+					<button on:click={() => showNotificationHistory = false} class="text-gray-500 hover:text-gray-700 transition duration-200">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+				<div class="space-y-4 max-h-96 overflow-y-auto">
+					{#each notifications as notification}
+						<div class="p-4 bg-gray-50 rounded-lg">
+							<div class="flex justify-between items-start">
+								<p class="text-gray-700">{notification.message}</p>
+								<span class="text-xs text-gray-500">{notification.timestamp}</span>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
 {:else if isMainPage}
 	<!-- MAIN PAGE -->
 	<div class="flex justify-between p-4">
-		<button on:click={handleUpgradePremium} class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-xl">
+		<button on:click={handleUpgradePremium} class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-xl transition duration-200 transform hover:scale-105">
 			Upgrade Premium
 		</button>
-		<button on:click={handleLogout} class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-xl">
-			Logout
-		</button>
+
+		{#if showNotification && currentNotification}
+			<div class="flex-1 mx-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white p-2 rounded-lg animate-slide-in">
+				<div class="flex items-center justify-between">
+					<div class="flex-1 overflow-hidden">
+						<div class="animate-marquee whitespace-nowrap">
+							{currentNotification.message}
+						</div>
+					</div>
+					<button
+						on:click={dismissNotification}
+						class="ml-4 text-white opacity-50 hover:opacity-100 transition duration-200"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		<div class="relative">
+			<button 
+				on:click={toggleUserMenu}
+				class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-xl transition duration-200 transform hover:scale-105"
+			>
+				<svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+				</svg>
+				<span class="font-medium">{username}</span>
+				<svg class="w-4 h-4 transition-transform duration-200 {showUserMenu ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+
+			{#if showUserMenu}
+				<div 
+					class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg py-1 z-50 user-menu-enter"
+					transition:slide={{ duration: 300 }}
+				>
+					<div class="px-4 py-2 border-b border-gray-100">
+						<p class="text-sm font-medium text-gray-900">{username}</p>
+						<p class="text-xs text-gray-500">{isPremium ? 'Premium User' : 'Free User'}</p>
+					</div>
+					<button 
+						on:click={() => showUserMenu = false}
+						class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+						</svg>
+						Personal Information
+					</button>
+					<button 
+						on:click={toggleSecurityModal}
+						class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+						</svg>
+						Security
+					</button>
+					<button 
+						on:click={() => {
+							showUserMenu = false;
+							showNotificationHistory = true;
+						}}
+						class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+						</svg>
+						Notification
+						{#if notifications.length > 0}
+							<span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1">
+								{notifications.length}
+							</span>
+						{/if}
+					</button>
+					<button 
+						on:click={handleLogout}
+						class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition duration-150"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+						</svg>
+						Logout
+					</button>
+				</div>
+			{/if}
+		</div>
 	</div>
 
+	{#if showSecurityModal}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[90]">
+			<div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
+				<div class="flex justify-between items-center mb-4">
+					<h2 class="text-xl font-bold text-gray-800">Change Password</h2>
+					<button on:click={() => showSecurityModal = false} class="text-gray-500 hover:text-gray-700 transition duration-200">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+
+				{#if securityError}
+					<div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+						{securityError}
+					</div>
+				{/if}
+
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+						<input
+							type="password"
+							bind:value={currentPassword}
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+						<input
+							type="password"
+							bind:value={newPassword}
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+						<input
+							type="password"
+							bind:value={confirmNewPassword}
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200"
+						/>
+					</div>
+				</div>
+
+				<div class="mt-6 flex justify-end space-x-3">
+					<button
+						on:click={() => showSecurityModal = false}
+						class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition duration-200"
+					>
+						Cancel
+					</button>
+					<button
+						on:click={handleChangePassword}
+						class="px-4 py-2 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-lg transition duration-200 transform hover:scale-105"
+					>
+						Change Password
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	{#if showPremiumModal}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[90]">
 			<div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
 				<div class="flex justify-between items-start mb-6">
 					<h2 class="text-3xl font-bold text-gray-800">Upgrade to Premium</h2>
@@ -1026,13 +1565,13 @@ ${htmlImgs.slice(1).join("\n")}
 			</div>
 		</div>
 	</div>
-	<!-- <div class="gray-bar bottom-bar"></div> -->
+	<div class="gray-bar bottom-bar"></div>
 {/if}
 
 <style>
 	.gray-bar {
 		width: 100%;
-		height: 12px;
+		height: 30px;
 		background-color: #ffffff;
 	}
 	span[contenteditable]:empty::before {
@@ -1145,5 +1684,100 @@ ${htmlImgs.slice(1).join("\n")}
 	/* Smooth resize */
 	[contenteditable] {
 		transition: height 0.2s ease;
+	}
+
+	/* User menu animation */
+	.user-menu-enter {
+		animation: menuEnter 0.3s ease-out;
+	}
+
+	@keyframes menuEnter {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Fade in animation */
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	.animate-fade-in {
+		animation: fadeIn 0.3s ease-out;
+	}
+
+	/* Slide transition */
+	.slide {
+		animation: slide 0.3s ease-out;
+	}
+
+	@keyframes slide {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Admin panel styles */
+	table {
+		border-collapse: separate;
+		border-spacing: 0;
+	}
+
+	th, td {
+		padding: 0.75rem;
+		text-align: left;
+		border-bottom: 1px solid #e5e7eb;
+	}
+
+	th {
+		background-color: #f9fafb;
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	tr:hover {
+		background-color: #f9fafb;
+	}
+
+	@keyframes slide-in {
+		from {
+			transform: translateY(-100%);
+		}
+		to {
+			transform: translateY(0);
+		}
+	}
+
+	.animate-slide-in {
+		animation: slide-in 0.5s ease-out;
+	}
+
+	@keyframes marquee {
+		0% {
+			transform: translateX(100%);
+		}
+		100% {
+			transform: translateX(-100%);
+		}
+	}
+
+	.animate-marquee {
+		animation: marquee 20s linear infinite;
 	}
 </style>
