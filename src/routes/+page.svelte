@@ -1147,11 +1147,11 @@ ${htmlImgs.slice(1).join("\n")}
 	</div>
 
 	{#if showAdminLoginModal}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-			<div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
-				<div class="flex justify-between items-center mb-4">
-					<h2 class="text-xl font-bold text-gray-800">Admin Login</h2>
-					<button on:click={() => { showAdminLoginModal = false; adminError = ''; }} class="text-gray-500 hover:text-gray-700 transition duration-200">
+		<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+			<div class="bg-white/90 backdrop-blur-sm rounded-xl p-8 max-w-md w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100 border border-gray-100">
+				<div class="flex justify-between items-center mb-6">
+					<h2 class="text-2xl font-bold text-gray-800">Admin Login</h2>
+					<button on:click={() => { showAdminLoginModal = false; adminError = ''; }} class="text-gray-500 hover:text-gray-700 transition duration-200 p-1 hover:bg-gray-100 rounded-lg">
 						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 						</svg>
@@ -1159,33 +1159,51 @@ ${htmlImgs.slice(1).join("\n")}
 				</div>
 
 				{#if adminError}
-					<div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+					<div class="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in border border-red-100">
 						{adminError}
 					</div>
 				{/if}
 
-				<form on:submit={handleAdminLogin}>
-					<div class="mb-4">
-						<label for="admin-username" class="block text-sm font-medium text-gray-700">Username</label>
-						<input
-							id="admin-username"
-							type="text"
-							bind:value={adminUsername}
-							class="mt-1 p-2 w-full border rounded-md"
-							required
-						/>
+				<form on:submit={handleAdminLogin} class="space-y-6">
+					<div class="space-y-4">
+						<div class="relative">
+							<label for="admin-username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+								</div>
+								<input
+									id="admin-username"
+									type="text"
+									bind:value={adminUsername}
+									class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+									required
+									placeholder="Enter admin username"
+								/>
+							</div>
+						</div>
+						<div class="relative">
+							<label for="admin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+									</svg>
+								</div>
+								<input
+									id="admin-password"
+									type="password"
+									bind:value={adminPassword}
+									class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+									required
+									placeholder="Enter admin password"
+								/>
+							</div>
+						</div>
 					</div>
-					<div class="mb-6">
-						<label for="admin-password" class="block text-sm font-medium text-gray-700">Password</label>
-						<input
-							id="admin-password"
-							type="password"
-							bind:value={adminPassword}
-							class="mt-1 p-2 w-full border rounded-md"
-							required
-						/>
-					</div>
-					<button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-xl">
+					<button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition duration-300 transform hover:scale-[1.02] hover:shadow-lg">
 						Login as Admin
 					</button>
 				</form>
@@ -1194,11 +1212,11 @@ ${htmlImgs.slice(1).join("\n")}
 	{/if}
 
 	{#if showAdminPanel}
-		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-			<div class="bg-white rounded-xl p-6 max-w-4xl w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
-				<div class="flex justify-between items-center mb-4">
-					<h2 class="text-xl font-bold text-gray-800">Admin Panel</h2>
-					<button on:click={() => { showAdminPanel = false; adminError = ''; }} class="text-gray-500 hover:text-gray-700 transition duration-200">
+		<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+			<div class="bg-white/90 backdrop-blur-sm rounded-xl p-8 max-w-4xl w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100 border border-gray-100">
+				<div class="flex justify-between items-center mb-6">
+					<h2 class="text-2xl font-bold text-gray-800">Admin Panel</h2>
+					<button on:click={() => { showAdminPanel = false; adminError = ''; }} class="text-gray-500 hover:text-gray-700 transition duration-200 p-1 hover:bg-gray-100 rounded-lg">
 						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 						</svg>
@@ -1206,36 +1224,43 @@ ${htmlImgs.slice(1).join("\n")}
 				</div>
 
 				{#if adminError}
-					<div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+					<div class="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in border border-red-100">
 						{adminError}
 					</div>
 				{/if}
 
-				<div class="mb-6">
+				<div class="mb-8">
 					<div class="flex items-center space-x-4 mb-4">
 						<h3 class="text-lg font-semibold text-gray-700">Send Notification</h3>
 					</div>
 					<div class="flex space-x-4">
-						<input
-							type="text"
-							bind:value={newNotificationMessage}
-							placeholder="Enter notification message..."
-							class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-						/>
+						<div class="relative flex-1">
+							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+								<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+								</svg>
+							</div>
+							<input
+								type="text"
+								bind:value={newNotificationMessage}
+								placeholder="Enter notification message..."
+								class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+							/>
+						</div>
 						<button
 							on:click={handleSendNotification}
-							class="px-4 py-2 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition duration-200"
+							class="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition duration-200 transform hover:scale-[1.02] hover:shadow-lg"
 						>
 							Send
 						</button>
 					</div>
 				</div>
 
-				<div class="mb-4">
-					<p class="text-sm text-gray-600">Total Users: {users.length}</p>
+				<div class="mb-6">
+					<p class="text-sm text-gray-600">Total Users: <span class="font-semibold text-purple-600">{users.length}</span></p>
 				</div>
 
-				<div class="overflow-x-auto">
+				<div class="overflow-x-auto rounded-xl border border-gray-100">
 					<table class="min-w-full divide-y divide-gray-200">
 						<thead class="bg-gray-50">
 							<tr>
@@ -1247,18 +1272,18 @@ ${htmlImgs.slice(1).join("\n")}
 						</thead>
 						<tbody class="bg-white divide-y divide-gray-200">
 							{#each users as user}
-								<tr>
+								<tr class="hover:bg-gray-50 transition duration-150">
 									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 										<button
 											on:click={() => handleTogglePremium(user.username)}
-											class="px-2 py-1 text-xs font-medium rounded-full {user.premium ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}"
+											class="px-3 py-1 text-xs font-medium rounded-full transition duration-200 {user.premium ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}"
 										>
 											{user.premium ? 'Premium' : 'Free'}
 										</button>
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-										<span class="px-2 py-1 text-xs font-medium rounded-full {user.isAdmin ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
+										<span class="px-3 py-1 text-xs font-medium rounded-full {user.isAdmin ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
 											{user.isAdmin ? 'Admin' : 'User'}
 										</span>
 									</td>
@@ -1368,56 +1393,56 @@ ${htmlImgs.slice(1).join("\n")}
 
 			{#if showUserMenu}
 				<div 
-					class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg py-1 z-50 user-menu-enter"
+					class="absolute right-0 mt-2 w-64 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg py-2 z-50 user-menu-enter border border-gray-100"
 					transition:slide={{ duration: 300 }}
 				>
-					<div class="px-4 py-2 border-b border-gray-100">
+					<div class="px-4 py-3 border-b border-gray-100">
 						<p class="text-sm font-medium text-gray-900">{username}</p>
-						<p class="text-xs text-gray-500">{isPremium ? 'Premium User' : 'Free User'}</p>
+						<p class="text-xs text-gray-500 mt-1">{isPremium ? 'Premium User' : 'Free User'}</p>
 					</div>
 					<button 
 						on:click={() => showUserMenu = false}
-						class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
+						class="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 transition duration-150 group"
 					>
-						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 mr-3 text-gray-500 group-hover:text-purple-500 transition duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 						</svg>
-						Personal Information
+						<span class="group-hover:text-purple-600 transition duration-150">Personal Information</span>
 					</button>
 					<button 
 						on:click={toggleSecurityModal}
-						class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
+						class="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 transition duration-150 group"
 					>
-						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 mr-3 text-gray-500 group-hover:text-purple-500 transition duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
 						</svg>
-						Security
+						<span class="group-hover:text-purple-600 transition duration-150">Security</span>
 					</button>
 					<button 
 						on:click={() => {
 							showUserMenu = false;
 							showNotificationHistory = true;
 						}}
-						class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
+						class="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 transition duration-150 group"
 					>
-						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 mr-3 text-gray-500 group-hover:text-purple-500 transition duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
 						</svg>
-						Notification
+						<span class="group-hover:text-purple-600 transition duration-150">Notification</span>
 						{#if notifications.length > 0}
-							<span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1">
+							<span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-1 group-hover:bg-purple-600 transition duration-150">
 								{notifications.length}
 							</span>
 						{/if}
 					</button>
 					<button 
 						on:click={handleLogout}
-						class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition duration-150"
+						class="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition duration-150 group mt-1 border-t border-gray-100"
 					>
-						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 mr-3 text-red-500 group-hover:text-red-600 transition duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 11-6 0v-1m6 0H9" />
 						</svg>
-						Logout
+						<span class="group-hover:text-red-700 transition duration-150">Logout</span>
 					</button>
 				</div>
 			{/if}
@@ -1841,11 +1866,11 @@ ${htmlImgs.slice(1).join("\n")}
 	@keyframes menuEnter {
 		from {
 			opacity: 0;
-			transform: translateY(-10px);
+			transform: translateY(-10px) scale(0.95);
 		}
 		to {
 			opacity: 1;
-			transform: translateY(0);
+			transform: translateY(0) scale(1);
 		}
 	}
 
@@ -1975,5 +2000,17 @@ ${htmlImgs.slice(1).join("\n")}
 	textarea:focus {
 		animation: none;
 		text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
+	}
+
+	/* Button hover effects */
+	button.group:hover {
+		transform: translateX(2px);
+	}
+
+	/* Smooth transitions */
+	.transition {
+		transition-property: all;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
 	}
 </style>
