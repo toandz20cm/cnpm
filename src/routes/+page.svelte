@@ -27,11 +27,13 @@
 	let showAdminLoginModal = false;
 	let showAdminPanel = false;
 	let showNotificationHistory = false;
+	let showPersonalInfoModal = false;
 	let currentPassword = '';
 	let newPassword = '';
 	let confirmNewPassword = '';
 	let securityError = '';
 	let adminError = '';
+	let personalInfoError = '';
 	let users: { username: string; premium: boolean; isAdmin: boolean }[] = [];
 	let adminUsername = '';
 	let adminPassword = '';
@@ -39,6 +41,39 @@
 	let currentNotification: { id: number; message: string; timestamp: string } | null = null;
 	let showNotification = false;
 	let newNotificationMessage = '';
+	let personalInfo = {
+		birthDate: '',
+		phoneNumber: '',
+		address: '',
+		company: ''
+	};
+
+	async function loadPersonalInfo() {
+		try {
+			const response = await fetch('/api/userInfo', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'getUserInfo',
+					username
+				})
+			});
+
+			const data = await response.json();
+			if (data.success && data.userInfo) {
+				personalInfo = {
+					birthDate: data.userInfo.birthDate || '',
+					phoneNumber: data.userInfo.phoneNumber || '',
+					address: data.userInfo.address || '',
+					company: data.userInfo.company || ''
+				};
+			}
+		} catch (error) {
+			console.error('Error loading personal info:', error);
+		}
+	}
 
 	// Handle authentication
 	async function handleLogin(event: Event) {
@@ -832,6 +867,9 @@ ${htmlImgs.slice(1).join("\n")}
 		canvas.width = canvasSize;
 		canvas.height = canvasSize;
 
+		// Prevent drawing on the sketch canvas
+		sketchEl.style.pointerEvents = 'none';
+
 		canvas.ondragover = function (e) {
 			e.preventDefault();
 			return false;
@@ -963,7 +1001,49 @@ ${htmlImgs.slice(1).join("\n")}
 
 	function toggleNotificationHistory() {
 		showNotificationHistory = !showNotificationHistory;
+		console.log("Notification History Toggled: ", showNotificationHistory);
 		showUserMenu = false;
+	}
+
+	function togglePersonalInfoModal() {
+		showPersonalInfoModal = !showPersonalInfoModal;
+		showUserMenu = false;
+		if (showPersonalInfoModal) {
+			loadPersonalInfo();
+		}
+	}
+
+	async function handleUpdatePersonalInfo() {
+		if (!personalInfo.birthDate || !personalInfo.phoneNumber || !personalInfo.address || !personalInfo.company) {
+			personalInfoError = 'Please fill in all fields';
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/userInfo', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					action: 'updateUserInfo',
+					username,
+					userInfo: personalInfo
+				})
+			});
+
+			const data = await response.json();
+			if (data.success) {
+				showPersonalInfoModal = false;
+				personalInfoError = '';
+				alert('Personal information updated successfully!');
+			} else {
+				personalInfoError = data.error || 'Failed to update personal information';
+			}
+		} catch (error) {
+			console.error('Update personal info error:', error);
+			personalInfoError = 'Server error';
+		}
 	}
 </script>
 
@@ -1401,7 +1481,7 @@ ${htmlImgs.slice(1).join("\n")}
 						<p class="text-xs text-gray-500 mt-1">{isPremium ? 'Premium User' : 'Free User'}</p>
 					</div>
 					<button 
-						on:click={() => showUserMenu = false}
+						on:click={togglePersonalInfoModal}
 						class="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 transition duration-150 group"
 					>
 						<svg class="w-4 h-4 mr-3 text-gray-500 group-hover:text-purple-500 transition duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1589,6 +1669,79 @@ ${htmlImgs.slice(1).join("\n")}
 		</div>
 	{/if}
 
+	{#if showPersonalInfoModal}
+		<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+			<div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl transform transition-all duration-300 scale-100 opacity-100">
+				<div class="flex justify-between items-center mb-4">
+					<h2 class="text-xl font-bold text-gray-800">Personal Information</h2>
+					<button on:click={() => showPersonalInfoModal = false} class="text-gray-500 hover:text-gray-700 transition duration-200">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+
+				{#if personalInfoError}
+					<div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm animate-fade-in">
+						{personalInfoError}
+					</div>
+				{/if}
+
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+						<input
+							type="date"
+							bind:value={personalInfo.birthDate}
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+						<input
+							type="tel"
+							bind:value={personalInfo.phoneNumber}
+							placeholder="Enter your phone number"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+						<textarea
+							bind:value={personalInfo.address}
+							placeholder="Enter your address"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 min-h-[80px]"
+						></textarea>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+						<input
+							type="text"
+							bind:value={personalInfo.company}
+							placeholder="Enter your company name"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+						/>
+					</div>
+				</div>
+
+				<div class="mt-6 flex justify-end space-x-3">
+					<button
+						on:click={() => showPersonalInfoModal = false}
+						class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition duration-200"
+					>
+						Cancel
+					</button>
+					<button
+						on:click={handleUpdatePersonalInfo}
+						class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition duration-200 transform hover:scale-105"
+					>
+						Save Changes
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<div class="gray-bar top-bar"></div>
 	<div class="flex flex-wrap gap-x-4 gap-y-2 justify-center my-0 bg-white text-black">
 		<canvas bind:this={sketchEl} class="border-[1.2px] desktop:mt-[34px] {isShowSketch ? '' : 'hidden'}" />
@@ -1681,8 +1834,7 @@ ${htmlImgs.slice(1).join("\n")}
 	<!-- Share to Community Button -->
 	<div class="fixed bottom-4 right-4 z-40">
 		<a 
-			href="https://short.com.vn/IzfZ" 
-			target="_blank"
+			href="/page2" 
 			class="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-300 transform bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-xl hover:scale-105 hover:shadow-lg hover:shadow-pink-500/50"
 		>
 			<span class="absolute inset-0 w-full h-full mt-1 ml-1 transition-all duration-300 bg-black rounded-xl group-hover:mt-0 group-hover:ml-0"></span>

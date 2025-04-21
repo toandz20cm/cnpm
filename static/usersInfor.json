@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "username": "",
+      "info": {
+        "birthDate": "2004-04-27",
+        "phoneNumber": "4444444444",
+        "address": "cccccc",
+        "company": "cccccc"
+      }
+    }
+  ]
+}
