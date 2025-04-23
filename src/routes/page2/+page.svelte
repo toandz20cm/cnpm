@@ -1,5 +1,5 @@
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 via-pink-500 to-red-500">
-    <h1 class="text-6xl font-bold text-white animate-bounce">Hello</h1>
+<div class="min-h-screen flex items-center justify-center bg-black">
+    <h1 class="text-6xl font-bold text-white animate-bounce">đạt óc chó</h1>
 </div>
 
 <style>
