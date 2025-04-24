@@ -39,6 +39,18 @@
       "password": "cGh1Y3JhbQ==",
       "premium": false,
       "isAdmin": false
+    },
+    {
+      "username": "nghiemdinhduong6@gmail.com",
+      "password": "MQ==",
+      "premium": true,
+      "isAdmin": false
+    },
+    {
+      "username": "22022104",
+      "password": "MQ==",
+      "premium": false,
+      "isAdmin": false
     }
   ],
   "notifications": [

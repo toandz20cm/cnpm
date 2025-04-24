@@ -47,6 +47,7 @@
 		address: '',
 		company: ''
 	};
+	let currentUser = '';
 
 	async function loadPersonalInfo() {
 		try {
@@ -101,6 +102,8 @@
 					currentNotification = notifications[notifications.length - 1];
 					showNotification = true;
 				}
+				currentUser = username; // ✅ Lưu tên người dùng đang đăng nhập
+				localStorage.setItem('currentUser', currentUser); // ✅ Lưu vào localStorage
 				loginError = '';
 				username = '';
 				password = '';
@@ -505,6 +508,15 @@
 				addOutputControl();
 			}
 			isSuccessfulGeneration = true;
+
+			// Reset drawing board after successful generation
+			await tick();
+			drawingBoard?.reset({ webStorage: false });
+			ctx = canvas.getContext('2d');
+			canvas.width = canvasSize;
+			canvas.height = canvasSize;
+			ctx.fillStyle = 'white';
+			ctx.fillRect(0, 0, canvasSize, canvasSize);
 		} catch (err) {
 			console.error(err);
 			alert('Error happened, queue might be full. Please try again in a bit :)');
